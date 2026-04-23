@@ -41,7 +41,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let normalized = normalizeDirectories(urls)
         guard let directory = normalized.first else {
-            showErrorAndQuit("没有收到可打开的文件夹。")
+            showErrorAndQuit("No folder was provided to open.")
             return
         }
 
@@ -82,7 +82,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let self else { return }
 
             if let error {
-                self.showErrorAndQuit("启动 cmux 失败：\(error.localizedDescription)")
+                self.showErrorAndQuit("Failed to launch cmux: \(error.localizedDescription)")
                 return
             }
 
@@ -349,7 +349,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         alert.alertStyle = .critical
         alert.messageText = "go2cmux"
         alert.informativeText = message
-        alert.addButton(withTitle: "好")
+        alert.addButton(withTitle: "OK")
         alert.runModal()
         NSApp.terminate(nil)
     }
@@ -385,29 +385,29 @@ private enum Go2CmuxError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .cmuxAppNotFound:
-            return "未找到 cmux.app。请确认已安装正式版 cmux，并检查 /Applications 或 ~/Applications。"
+            return "Could not find cmux.app. Make sure the released version of cmux is installed in /Applications or ~/Applications."
         case .finderReturnedEmptyDirectory:
-            return "Finder 没有返回有效目录。"
+            return "Finder did not return a valid folder."
         case .failedToCreateAppleScript(let target):
-            return "无法创建用于访问\(target.displayName)的 AppleScript。"
+            return "Could not create the AppleScript used to access \(target.displayName)."
         case .appleScriptFailed(let target, let code, let message):
             if code == -1743 {
-                return "请在 系统设置 > 隐私与安全性 > 自动化 中允许 go2cmux 控制 \(target.displayName)，然后再试一次。"
+                return "Allow go2cmux to control \(target.displayName) in System Settings > Privacy & Security > Automation, then try again."
             }
 
             if code == -1712 {
-                return "\(target.displayName) 响应超时，请稍后再试。"
+                return "\(target.displayName) timed out. Please try again."
             }
 
             if let code {
-                return "无法访问\(target.displayName)（错误 \(code)）：\(message)"
+                return "Could not access \(target.displayName) (error \(code)): \(message)"
             }
 
-            return "无法访问\(target.displayName)：\(message)"
+            return "Could not access \(target.displayName): \(message)"
         case .cmuxStartupTimedOut:
-            return "cmux 启动后没有及时出现窗口。若这是第一次运行，请先确认 go2cmux 已被允许控制 cmux。"
+            return "cmux did not present a window in time. If this is the first launch, make sure go2cmux is allowed to control cmux."
         case .cmuxServiceUnavailable:
-            return "调用 cmux Finder Service 失败。请确认 cmux 已正常安装，并在 系统设置 > 隐私与安全性 > 自动化 中允许 go2cmux 控制 cmux。"
+            return "Failed to invoke the cmux Finder Service. Make sure cmux is installed correctly and go2cmux is allowed to control cmux in System Settings > Privacy & Security > Automation."
         }
     }
 }

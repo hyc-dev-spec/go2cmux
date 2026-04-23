@@ -2,7 +2,6 @@ import AppKit
 import Foundation
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
-    private let cmuxAppURL = URL(fileURLWithPath: "/Applications/cmux.app", isDirectory: true)
     private let cmuxBundleIdentifier = "com.cmuxterm.app"
     private let cmuxWorkspaceServiceName = "New cmux Workspace Here"
     private let serviceRetryLimit = 20
@@ -35,8 +34,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private func handleIncomingURLs(_ urls: [URL]) {
         didHandleExternalOpen = true
 
-        guard FileManager.default.fileExists(atPath: cmuxAppURL.path) else {
-            showErrorAndQuit("未找到 \(cmuxAppURL.path)")
+        guard resolvedCmuxAppURL != nil else {
+            showErrorAndQuit(Go2CmuxError.cmuxAppNotFound.localizedDescription)
             return
         }
 
@@ -50,8 +49,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func openInCmux(_ directory: URL) {
-        guard FileManager.default.fileExists(atPath: cmuxAppURL.path) else {
-            showErrorAndQuit("未找到 \(cmuxAppURL.path)")
+        guard resolvedCmuxAppURL != nil else {
+            showErrorAndQuit(Go2CmuxError.cmuxAppNotFound.localizedDescription)
             return
         }
 
@@ -71,6 +70,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func launchCmuxThenOpen(_ directory: URL) {
+        guard let cmuxAppURL = resolvedCmuxAppURL else {
+            showErrorAndQuit(Go2CmuxError.cmuxAppNotFound.localizedDescription)
+            return
+        }
+
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
 
@@ -173,6 +177,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var isCmuxRunning: Bool {
         !NSRunningApplication.runningApplications(withBundleIdentifier: cmuxBundleIdentifier).isEmpty
+    }
+
+    private var resolvedCmuxAppURL: URL? {
+        if let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: cmuxBundleIdentifier),
+           FileManager.default.fileExists(atPath: appURL.path) {
+            return appURL
+        }
+
+        let fallbackPaths = [
+            "/Applications/cmux.app",
+            NSString(string: "~/Applications/cmux.app").expandingTildeInPath
+        ]
+
+        for path in fallbackPaths where FileManager.default.fileExists(atPath: path) {
+            return URL(fileURLWithPath: path, isDirectory: true)
+        }
+
+        return nil
     }
 
     private func captureBootstrapCandidate() -> BootstrapCandidate? {
@@ -353,6 +375,7 @@ private enum AutomationTarget {
 }
 
 private enum Go2CmuxError: LocalizedError {
+    case cmuxAppNotFound
     case finderReturnedEmptyDirectory
     case failedToCreateAppleScript(target: AutomationTarget)
     case appleScriptFailed(target: AutomationTarget, code: Int?, message: String)
@@ -361,6 +384,8 @@ private enum Go2CmuxError: LocalizedError {
 
     var errorDescription: String? {
         switch self {
+        case .cmuxAppNotFound:
+            return "未找到 cmux.app。请确认已安装正式版 cmux，并检查 /Applications 或 ~/Applications。"
         case .finderReturnedEmptyDirectory:
             return "Finder 没有返回有效目录。"
         case .failedToCreateAppleScript(let target):

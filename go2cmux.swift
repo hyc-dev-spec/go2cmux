@@ -5,6 +5,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private let cmuxBundleIdentifier = "com.cmuxterm.app"
     private let cmuxWorkspaceServiceName = "New cmux Workspace Here"
     private let serviceRetryLimit = 20
+    private let cleanupRetryLimit = 5
     private let logURL = URL(fileURLWithPath: "/tmp/go2cmux.log")
 
     private var didHandleExternalOpen = false
@@ -57,6 +58,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let wasRunning = isCmuxRunning
         log("open start dir=\(directory.path) running=\(wasRunning)")
 
+        if !wasRunning && isHomeDirectory(directory) {
+            launchCmuxOnly()
+            return
+        }
+
         if wasRunning {
             performWorkspaceService(
                 directory,
@@ -67,6 +73,27 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         launchCmuxThenOpen(directory)
+    }
+
+    private func launchCmuxOnly() {
+        guard let cmuxAppURL = resolvedCmuxAppURL else {
+            showErrorAndQuit(Go2CmuxError.cmuxAppNotFound.localizedDescription)
+            return
+        }
+
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.activates = true
+
+        NSWorkspace.shared.openApplication(at: cmuxAppURL, configuration: configuration) { [weak self] _, error in
+            guard let self else { return }
+
+            if let error {
+                self.showErrorAndQuit("Failed to launch cmux: \(error.localizedDescription)")
+                return
+            }
+
+            NSApp.terminate(nil)
+        }
     }
 
     private func launchCmuxThenOpen(_ directory: URL) {
@@ -155,8 +182,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if didPerformService {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.7) { [weak self] in
-                self?.closeBootstrapTabIfNeeded(bootstrapCandidate)
-                NSApp.terminate(nil)
+                self?.closeBootstrapTabIfNeeded(bootstrapCandidate, retryCount: 0) {
+                    NSApp.terminate(nil)
+                }
             }
             return
         }
@@ -177,6 +205,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var isCmuxRunning: Bool {
         !NSRunningApplication.runningApplications(withBundleIdentifier: cmuxBundleIdentifier).isEmpty
+    }
+
+    private func isHomeDirectory(_ directory: URL) -> Bool {
+        directory.resolvingSymlinksInPath().standardizedFileURL.path ==
+            FileManager.default.homeDirectoryForCurrentUser.resolvingSymlinksInPath().standardizedFileURL.path
     }
 
     private var resolvedCmuxAppURL: URL? {
@@ -228,8 +261,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         return candidate
     }
 
-    private func closeBootstrapTabIfNeeded(_ candidate: BootstrapCandidate?) {
-        guard let candidate else { return }
+    private func closeBootstrapTabIfNeeded(
+        _ candidate: BootstrapCandidate?,
+        retryCount: Int,
+        completion: @escaping () -> Void
+    ) {
+        guard let candidate else {
+            completion()
+            return
+        }
 
         let source = """
         tell application "cmux"
@@ -238,11 +278,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 if (count of tabs of targetWindow) is less than or equal to 1 then return "skip"
                 set staleTab to first tab of targetWindow whose id is "\(escapeAppleScript(candidate.tabID))"
                 set currentTab to selected tab of targetWindow
-                if (name of staleTab) is "~" and (name of currentTab) is not "~" then
+                if (id of currentTab) is not "\(escapeAppleScript(candidate.tabID))" then
                     close tab staleTab
                     return "closed"
                 end if
-                return "skip"
+                return "waiting"
             on error
                 return "skip"
             end try
@@ -251,6 +291,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         let result = (try? scriptString(source, target: .cmux)) ?? "skip"
         log("bootstrap cleanup result=\(result)")
+
+        guard result == "waiting", retryCount < cleanupRetryLimit else {
+            completion()
+            return
+        }
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+            self?.closeBootstrapTabIfNeeded(
+                candidate,
+                retryCount: retryCount + 1,
+                completion: completion
+            )
+        }
     }
 
     private func resolveFinderDirectory() throws -> URL {

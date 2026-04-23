@@ -19,7 +19,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 let directory = try self.resolveFinderDirectory()
                 self.openInCmux(directory)
             } catch {
-                self.showErrorAndQuit("无法读取 Finder 当前文件夹：\(error.localizedDescription)")
+                self.showErrorAndQuit(self.userFacingMessage(for: error))
             }
         }
     }
@@ -82,38 +82,47 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return
             }
 
-            self.waitForCmuxWindows(retryCount: 0) { ready in
-                guard ready else {
-                    self.showErrorAndQuit("cmux 启动后没有及时出现窗口。")
-                    return
+            self.waitForCmuxWindows(retryCount: 0) { result in
+                switch result {
+                case .success:
+                    let bootstrapCandidate = self.captureBootstrapCandidate()
+                    self.performWorkspaceService(
+                        directory,
+                        retryCount: 0,
+                        bootstrapCandidate: bootstrapCandidate
+                    )
+                case .failure(let error):
+                    self.showErrorAndQuit(self.userFacingMessage(for: error))
                 }
-
-                let bootstrapCandidate = self.captureBootstrapCandidate()
-                self.performWorkspaceService(
-                    directory,
-                    retryCount: 0,
-                    bootstrapCandidate: bootstrapCandidate
-                )
             }
         }
     }
 
-    private func waitForCmuxWindows(retryCount: Int, completion: @escaping (Bool) -> Void) {
-        let windowCount = scriptInt("""
-        tell application "cmux"
-            return count of windows
-        end tell
-        """) ?? 0
+    private func waitForCmuxWindows(
+        retryCount: Int,
+        completion: @escaping (Result<Void, Error>) -> Void
+    ) {
+        let windowCount: Int
+        do {
+            windowCount = try scriptInt("""
+            tell application "cmux"
+                return count of windows
+            end tell
+            """, target: .cmux) ?? 0
+        } catch {
+            completion(.failure(error))
+            return
+        }
 
         if windowCount > 0 {
             log("cmux ready windows=\(windowCount)")
-            completion(true)
+            completion(.success(()))
             return
         }
 
         guard retryCount < serviceRetryLimit else {
             log("cmux not ready after retries")
-            completion(false)
+            completion(.failure(Go2CmuxError.cmuxStartupTimedOut))
             return
         }
 
@@ -149,7 +158,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         guard retryCount < serviceRetryLimit else {
-            showErrorAndQuit("调用 cmux Finder Service 失败。")
+            showErrorAndQuit(Go2CmuxError.cmuxServiceUnavailable.localizedDescription)
             return
         }
 
@@ -178,7 +187,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         end tell
         """
 
-        guard let raw = scriptString(source) else {
+        guard let raw = try? scriptString(source, target: .cmux) else {
             log("bootstrap capture: none")
             return nil
         }
@@ -218,7 +227,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         end tell
         """
 
-        let result = scriptString(source) ?? "skip"
+        let result = (try? scriptString(source, target: .cmux)) ?? "skip"
         log("bootstrap cleanup result=\(result)")
     }
 
@@ -233,27 +242,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         end tell
         """
 
-        guard let script = NSAppleScript(source: source) else {
-            throw NSError(domain: "go2cmux", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "无法创建 Finder AppleScript。"
-            ])
-        }
-
-        var errorInfo: NSDictionary?
-        let result = script.executeAndReturnError(&errorInfo)
-        if let errorInfo {
-            let message = (errorInfo[NSAppleScript.errorMessage] as? String)
-                ?? errorInfo.description
-            throw NSError(domain: "go2cmux", code: 2, userInfo: [
-                NSLocalizedDescriptionKey: message
-            ])
-        }
-
-        guard let path = result.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines),
+        guard let path = try scriptString(source, target: .finder),
               !path.isEmpty else {
-            throw NSError(domain: "go2cmux", code: 3, userInfo: [
-                NSLocalizedDescriptionKey: "Finder 没有返回有效目录。"
-            ])
+            throw Go2CmuxError.finderReturnedEmptyDirectory
         }
 
         return URL(fileURLWithPath: path, isDirectory: true)
@@ -269,31 +260,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }
     }
 
-    private func scriptString(_ source: String) -> String? {
-        do {
-            let result = try executeAppleScript(source)
-            return result.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
-        } catch {
-            log("script string failed: \(error.localizedDescription)")
-            return nil
-        }
+    private func scriptString(_ source: String, target: AutomationTarget) throws -> String? {
+        let result = try executeAppleScript(source, target: target)
+        return result.stringValue?.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 
-    private func scriptInt(_ source: String) -> Int? {
-        do {
-            let result = try executeAppleScript(source)
-            return result.int32Value == 0 && result.stringValue == nil ? nil : Int(result.int32Value)
-        } catch {
-            log("script int failed: \(error.localizedDescription)")
-            return nil
-        }
+    private func scriptInt(_ source: String, target: AutomationTarget) throws -> Int? {
+        let result = try executeAppleScript(source, target: target)
+        return result.int32Value == 0 && result.stringValue == nil ? nil : Int(result.int32Value)
     }
 
-    private func executeAppleScript(_ source: String) throws -> NSAppleEventDescriptor {
+    private func executeAppleScript(
+        _ source: String,
+        target: AutomationTarget
+    ) throws -> NSAppleEventDescriptor {
         guard let script = NSAppleScript(source: source) else {
-            throw NSError(domain: "go2cmux", code: 10, userInfo: [
-                NSLocalizedDescriptionKey: "无法创建 AppleScript。"
-            ])
+            throw Go2CmuxError.failedToCreateAppleScript(target: target)
         }
 
         var errorInfo: NSDictionary?
@@ -301,12 +283,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if let errorInfo {
             let message = (errorInfo[NSAppleScript.errorMessage] as? String)
                 ?? errorInfo.description
-            throw NSError(domain: "go2cmux", code: 11, userInfo: [
-                NSLocalizedDescriptionKey: message
-            ])
+            let code = errorInfo[NSAppleScript.errorNumber] as? Int
+            log("applescript error target=\(target.displayName) code=\(code.map(String.init) ?? "nil") message=\(message)")
+            throw Go2CmuxError.appleScriptFailed(target: target, code: code, message: message)
         }
 
         return result
+    }
+
+    private func userFacingMessage(for error: Error) -> String {
+        if let go2CmuxError = error as? Go2CmuxError {
+            return go2CmuxError.localizedDescription
+        }
+
+        return error.localizedDescription
     }
 
     private func escapeAppleScript(_ value: String) -> String {
@@ -321,7 +311,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         if FileManager.default.fileExists(atPath: logURL.path) {
             if let handle = try? FileHandle(forWritingTo: logURL) {
-                try? handle.seekToEnd()
+                _ = try? handle.seekToEnd()
                 try? handle.write(contentsOf: data)
                 try? handle.close()
             }
@@ -346,6 +336,55 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 private struct BootstrapCandidate {
     let windowID: String
     let tabID: String
+}
+
+private enum AutomationTarget {
+    case finder
+    case cmux
+
+    var displayName: String {
+        switch self {
+        case .finder:
+            return "Finder"
+        case .cmux:
+            return "cmux"
+        }
+    }
+}
+
+private enum Go2CmuxError: LocalizedError {
+    case finderReturnedEmptyDirectory
+    case failedToCreateAppleScript(target: AutomationTarget)
+    case appleScriptFailed(target: AutomationTarget, code: Int?, message: String)
+    case cmuxStartupTimedOut
+    case cmuxServiceUnavailable
+
+    var errorDescription: String? {
+        switch self {
+        case .finderReturnedEmptyDirectory:
+            return "Finder 没有返回有效目录。"
+        case .failedToCreateAppleScript(let target):
+            return "无法创建用于访问\(target.displayName)的 AppleScript。"
+        case .appleScriptFailed(let target, let code, let message):
+            if code == -1743 {
+                return "请在 系统设置 > 隐私与安全性 > 自动化 中允许 go2cmux 控制 \(target.displayName)，然后再试一次。"
+            }
+
+            if code == -1712 {
+                return "\(target.displayName) 响应超时，请稍后再试。"
+            }
+
+            if let code {
+                return "无法访问\(target.displayName)（错误 \(code)）：\(message)"
+            }
+
+            return "无法访问\(target.displayName)：\(message)"
+        case .cmuxStartupTimedOut:
+            return "cmux 启动后没有及时出现窗口。若这是第一次运行，请先确认 go2cmux 已被允许控制 cmux。"
+        case .cmuxServiceUnavailable:
+            return "调用 cmux Finder Service 失败。请确认 cmux 已正常安装，并在 系统设置 > 隐私与安全性 > 自动化 中允许 go2cmux 控制 cmux。"
+        }
+    }
 }
 
 let app = NSApplication.shared

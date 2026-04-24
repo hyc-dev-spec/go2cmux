@@ -29,7 +29,7 @@
 
 - macOS
 - 本地已经安装 `cmux`
-- 如果你想从源码构建，需要安装 Xcode（`build.sh` 会用 `actool` 编译支持明暗外观切换的 app icon 资源）
+- 如果你想从源码构建，需要安装 Xcode（`build.sh` 会用 `actool` 编译 app icon 资源）
 
 运行时，`go2cmux` 会按下面的顺序查找 `cmux.app`：
 
@@ -51,7 +51,7 @@
 
 现在有两种构建方式：
 
-1. 直接用 Xcode 打开 [go2cmux.xcodeproj](/Users/yandaoyang/tool/go2cmux/go2cmux.xcodeproj/project.pbxproj)，构建 `go2cmux` target
+1. 直接用 Xcode 打开 [`go2cmux.xcodeproj`](go2cmux.xcodeproj)，构建 `go2cmux` target
 2. 在终端里运行构建脚本
 
 仓库里已经包含一个构建脚本，可以直接生成带 ad-hoc 签名的 app bundle：
@@ -69,21 +69,29 @@ build/go2cmux.app
 这个脚本会做几件事：
 
 - 把 `Resources/Info.plist` 复制进 app bundle
-- 先用两张 1024x1024 主图同步更新 light/dark 的 `AppIcon.appiconset`
+- 用 `Resources/AppIcon-1024.png` 同步更新 `AppIcon.appiconset`
 - 用 `swiftc` 编译 `Sources/go2cmux/AppDelegate.swift` 和 `Sources/go2cmux/main.swift`
 - 用 `actool` 编译 asset catalog
 - 用 ad-hoc `codesign` 给生成的 `.app` 签名
 
 ## 使用方式
 
+如果你正常打开 `go2cmux.app`，它会先显示一个很小的设置窗口。你可以在里面：
+
+- 确认当前识别到的 `cmux.app` 路径
+- 选择 Finder 工具栏按钮是打开 `New cmux Window` 还是 `New cmux Workspace`
+- 自定义目录打开后发送给 `cmux` 的命令
+
+从 Finder 使用时：
+
 1. 先自行构建 app，或者下载预编译版本
-2. 把 `go2cmux.app` 拖到 Finder 工具栏
+2. 按住 `Command`，再把 `go2cmux.app` 拖到 Finder 工具栏
 3. 在 Finder 中进入任意目录
 4. 点击工具栏按钮
 
 预期行为：
 
-- 如果 `cmux` 已经在运行，`go2cmux` 会在现有 `cmux` 中新增一个 workspace
+- 如果 `cmux` 已经在运行，`go2cmux` 会按当前选择的模式打开 Finder 当前目录
 - 如果 `cmux` 还没运行，`go2cmux` 会先启动它，再打开当前目录
 
 ## 项目结构
@@ -94,7 +102,7 @@ build/go2cmux.app
 - `Assets.xcassets/AppIcon.appiconset`：app icon 资源目录
 - `Resources/Info.plist`：app bundle 元数据
 - `scripts/build.sh`：本地构建脚本
-- `scripts/update_appiconset.sh`：根据明暗两张主图同步 icon set
+- `scripts/update_appiconset.sh`：根据主图同步 icon set
 
 ## 已知限制
 

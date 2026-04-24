@@ -12,7 +12,7 @@ When you click `go2cmux` from the Finder toolbar, it:
 
 1. Reads the current folder from Finder
 2. Launches `cmux` if needed
-3. Opens that folder as a new `cmux` workspace
+3. Opens that folder in `cmux` using the selected mode
 
 The current implementation is intentionally small and focused. It does not modify `cmux`, and it does not depend on a locally built development copy of `cmux`.
 
@@ -24,7 +24,7 @@ The current implementation is intentionally small and focused. It does not modif
 
 - macOS
 - A locally installed copy of `cmux`
-- Xcode if you want to build from source (`build.sh` uses `actool` to compile the light/dark app icon asset catalog)
+- Xcode if you want to build from source (`build.sh` uses `actool` to compile the app icon asset catalog)
 
 For runtime, `go2cmux` looks for `cmux.app` in this order:
 
@@ -45,7 +45,7 @@ The first time you use it, macOS may ask you to allow `go2cmux` to control Finde
 
 You can build the app in either of these ways:
 
-1. Open [go2cmux.xcodeproj](/Users/yandaoyang/tool/go2cmux/go2cmux.xcodeproj/project.pbxproj) in Xcode and build the `go2cmux` target
+1. Open [`go2cmux.xcodeproj`](go2cmux.xcodeproj) in Xcode and build the `go2cmux` target
 2. Run the build script from Terminal
 
 The repository includes a build script that creates an ad-hoc signed app bundle:
@@ -63,21 +63,29 @@ build/go2cmux.app
 The script:
 
 - copies `Resources/Info.plist` into the app bundle
-- refreshes the light/dark `AppIcon.appiconset` from the two 1024x1024 master PNGs
+- refreshes `AppIcon.appiconset` from `Resources/AppIcon-1024.png`
 - compiles `Sources/go2cmux/AppDelegate.swift` and `Sources/go2cmux/main.swift` with `swiftc`
 - compiles the asset catalog with `actool`
 - signs the resulting `.app` with ad-hoc `codesign`
 
 ## Use
 
+If you open `go2cmux.app` normally, it shows a small settings window. From there you can:
+
+- confirm which `cmux.app` installation was found
+- choose whether the Finder toolbar button opens a `New cmux Window` or a `New cmux Workspace`
+- customize the command that will be sent to `cmux` after the folder is opened
+
+To use it from Finder:
+
 1. Build the app or download a prebuilt copy
-2. Drag `go2cmux.app` into the Finder toolbar
+2. Hold `Command`, then drag `go2cmux.app` into the Finder toolbar
 3. Open any folder in Finder
 4. Click the toolbar button
 
 Expected behavior:
 
-- If `cmux` is already running, `go2cmux` adds a workspace for the current Finder folder
+- If `cmux` is already running, `go2cmux` opens the current Finder folder using the selected mode
 - If `cmux` is not running, `go2cmux` launches it first and then opens the folder
 
 ## Project Layout
@@ -88,7 +96,7 @@ Expected behavior:
 - `Assets.xcassets/AppIcon.appiconset`: compiled app icon asset catalog
 - `Resources/Info.plist`: app bundle metadata
 - `scripts/build.sh`: local build script
-- `scripts/update_appiconset.sh`: syncs the icon set from the light/dark master PNGs
+- `scripts/update_appiconset.sh`: syncs the icon set from the master PNG
 
 ## Known Limitations
 

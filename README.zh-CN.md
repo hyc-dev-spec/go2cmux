@@ -29,7 +29,7 @@
 
 - macOS
 - 本地已经安装 `cmux`
-- 如果你想从源码构建，需要安装 Xcode 或 Apple Command Line Tools
+- 如果你想从源码构建，需要安装 Xcode（`build.sh` 会用 `actool` 编译支持明暗外观切换的 app icon 资源）
 
 运行时，`go2cmux` 会按下面的顺序查找 `cmux.app`：
 
@@ -49,7 +49,12 @@
 
 ## 构建
 
-仓库里已经包含一个简单的构建脚本，可以直接生成带 ad-hoc 签名的 app bundle：
+现在有两种构建方式：
+
+1. 直接用 Xcode 打开 [go2cmux.xcodeproj](/Users/yandaoyang/tool/go2cmux/go2cmux.xcodeproj/project.pbxproj)，构建 `go2cmux` target
+2. 在终端里运行构建脚本
+
+仓库里已经包含一个构建脚本，可以直接生成带 ad-hoc 签名的 app bundle：
 
 ```bash
 ./scripts/build.sh
@@ -61,10 +66,12 @@
 build/go2cmux.app
 ```
 
-这个脚本会做三件事：
+这个脚本会做几件事：
 
 - 把 `Resources/Info.plist` 复制进 app bundle
-- 用 `swiftc` 编译 `go2cmux.swift`
+- 先用两张 1024x1024 主图同步更新 light/dark 的 `AppIcon.appiconset`
+- 用 `swiftc` 编译 `Sources/go2cmux/AppDelegate.swift` 和 `Sources/go2cmux/main.swift`
+- 用 `actool` 编译 asset catalog
 - 用 ad-hoc `codesign` 给生成的 `.app` 签名
 
 ## 使用方式
@@ -81,9 +88,13 @@ build/go2cmux.app
 
 ## 项目结构
 
-- `go2cmux.swift`：app 主逻辑
+- `Sources/go2cmux/AppDelegate.swift`：app 主逻辑
+- `Sources/go2cmux/main.swift`：app 启动入口
+- `go2cmux.xcodeproj`：最小可用的 Xcode 工程
+- `Assets.xcassets/AppIcon.appiconset`：app icon 资源目录
 - `Resources/Info.plist`：app bundle 元数据
 - `scripts/build.sh`：本地构建脚本
+- `scripts/update_appiconset.sh`：根据明暗两张主图同步 icon set
 
 ## 已知限制
 

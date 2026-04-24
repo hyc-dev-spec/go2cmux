@@ -1,3 +1,7 @@
-*.app
-build/
 .DS_Store
+*.app
+.venv/
+build/
+tmp/
+*.xcuserstate
+xcuserdata/

@@ -8,6 +8,10 @@
     <string>go2cmux</string>
     <key>CFBundleExecutable</key>
     <string>go2cmux</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleIconName</key>
+    <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
     <string>local.go2cmux</string>
     <key>CFBundleInfoDictionaryVersion</key>

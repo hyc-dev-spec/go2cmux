@@ -464,8 +464,3 @@ private enum Go2CmuxError: LocalizedError {
         }
     }
 }
-
-let app = NSApplication.shared
-let delegate = AppDelegate()
-app.delegate = delegate
-app.run()

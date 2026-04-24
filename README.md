@@ -24,7 +24,7 @@ The current implementation is intentionally small and focused. It does not modif
 
 - macOS
 - A locally installed copy of `cmux`
-- Xcode or Apple Command Line Tools if you want to build from source
+- Xcode if you want to build from source (`build.sh` uses `actool` to compile the light/dark app icon asset catalog)
 
 For runtime, `go2cmux` looks for `cmux.app` in this order:
 
@@ -43,7 +43,12 @@ The first time you use it, macOS may ask you to allow `go2cmux` to control Finde
 
 ## Build
 
-The repository includes a simple build script that creates an ad-hoc signed app bundle:
+You can build the app in either of these ways:
+
+1. Open [go2cmux.xcodeproj](/Users/yandaoyang/tool/go2cmux/go2cmux.xcodeproj/project.pbxproj) in Xcode and build the `go2cmux` target
+2. Run the build script from Terminal
+
+The repository includes a build script that creates an ad-hoc signed app bundle:
 
 ```bash
 ./scripts/build.sh
@@ -58,7 +63,9 @@ build/go2cmux.app
 The script:
 
 - copies `Resources/Info.plist` into the app bundle
-- compiles `go2cmux.swift` with `swiftc`
+- refreshes the light/dark `AppIcon.appiconset` from the two 1024x1024 master PNGs
+- compiles `Sources/go2cmux/AppDelegate.swift` and `Sources/go2cmux/main.swift` with `swiftc`
+- compiles the asset catalog with `actool`
 - signs the resulting `.app` with ad-hoc `codesign`
 
 ## Use
@@ -75,9 +82,13 @@ Expected behavior:
 
 ## Project Layout
 
-- `go2cmux.swift`: app logic
+- `Sources/go2cmux/AppDelegate.swift`: app logic
+- `Sources/go2cmux/main.swift`: app entry point
+- `go2cmux.xcodeproj`: minimal Xcode project
+- `Assets.xcassets/AppIcon.appiconset`: compiled app icon asset catalog
 - `Resources/Info.plist`: app bundle metadata
 - `scripts/build.sh`: local build script
+- `scripts/update_appiconset.sh`: syncs the icon set from the light/dark master PNGs
 
 ## Known Limitations
 

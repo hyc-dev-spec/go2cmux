@@ -487,13 +487,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func cdCmuxWindow(windowID: String, directory: URL, retryCount: Int, terminateWhenDone: Bool) {
         let command = commandForDirectory(directory)
+        guard !command.isEmpty else {
+            log("window command skipped reason=empty-template")
+            finishAction(terminateWhenDone: terminateWhenDone)
+            return
+        }
         let source = """
         tell application "cmux"
             set targetWindow to first window whose id is "\(escapeAppleScript(windowID))"
             activate window targetWindow
             set targetTab to selected tab of targetWindow
             set targetTerminal to focused terminal of targetTab
-            input text ("\(escapeAppleScript(command))" & linefeed) to targetTerminal
+            input text "\(escapeAppleScript(command))" to targetTerminal
+            perform action "text:\\r" on targetTerminal
         end tell
         """
 
@@ -605,13 +611,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func inputCommandInFrontTerminal(directory: URL, retryCount: Int, terminateWhenDone: Bool) {
         let command = commandForDirectory(directory)
+        guard !command.isEmpty else {
+            log("front command skipped reason=empty-template")
+            finishAction(terminateWhenDone: terminateWhenDone)
+            return
+        }
         let source = """
         tell application "cmux"
             activate
             set targetWindow to front window
             set targetTab to selected tab of targetWindow
             set targetTerminal to focused terminal of targetTab
-            input text ("\(escapeAppleScript(command))" & linefeed) to targetTerminal
+            input text "\(escapeAppleScript(command))" to targetTerminal
+            perform action "text:\\r" on targetTerminal
         end tell
         """
 
@@ -651,12 +663,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private var commandTemplate: String {
         get {
-            let saved = UserDefaults.standard.string(forKey: commandTemplateDefaultsKey) ?? defaultCommandTemplate
-            return saved.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? defaultCommandTemplate : saved
+            UserDefaults.standard.string(forKey: commandTemplateDefaultsKey) ?? defaultCommandTemplate
         }
         set {
             let normalized = newValue.trimmingCharacters(in: .whitespacesAndNewlines)
-            UserDefaults.standard.set(normalized.isEmpty ? defaultCommandTemplate : normalized, forKey: commandTemplateDefaultsKey)
+            UserDefaults.standard.set(normalized, forKey: commandTemplateDefaultsKey)
         }
     }
 
@@ -1102,10 +1113,8 @@ private final class SettingsWindowController: NSWindowController, NSWindowDelega
         }
 
         let normalized = field.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        if normalized.isEmpty {
-            field.stringValue = Self.defaultCommandTemplate
-            commandTemplateChanged(Self.defaultCommandTemplate)
-        }
+        field.stringValue = normalized
+        commandTemplateChanged(normalized)
     }
 
     @objc private func resetCommandTemplate() {

@@ -8,6 +8,8 @@ It is designed for the same workflow as tools like Go2Shell: add the app to the 
 
 Download the prebuilt app: [GitHub Releases](https://github.com/hyc-dev-spec/go2cmux/releases)
 
+![go2cmux](doc/7.gif)
+
 ## What It Does
 
 When you click `go2cmux` from the Finder toolbar, it:

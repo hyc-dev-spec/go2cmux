@@ -8,6 +8,8 @@
 
 下载预编译版本： [GitHub Releases](https://github.com/hyc-dev-spec/go2cmux/releases)
 
+![go2cmux](doc/7.gif)
+
 ## 它能做什么
 
 当你在 Finder 工具栏点击 `go2cmux` 时，它会：

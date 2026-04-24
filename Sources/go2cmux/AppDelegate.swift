@@ -101,7 +101,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
                 return false
             }
         } catch {
-            log("launch mode=toolbar selection-check-failed=\(userFacingMessage(for: error))")
+            log("launch mode=settings reason=selection-check-failed error=\(userFacingMessage(for: error))")
+            return false
         }
 
         log("launch mode=toolbar")

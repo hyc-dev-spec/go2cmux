@@ -6,6 +6,8 @@ English | [简体中文](README.zh-CN.md)
 
 It is designed for the same workflow as tools like Go2Shell: add the app to the Finder toolbar, click it, and jump straight from the current Finder location into your terminal app. The difference is that this project targets `cmux`.
 
+Download the prebuilt app: [GitHub Releases](https://github.com/hyc-dev-spec/go2cmux/releases)
+
 ## What It Does
 
 When you click `go2cmux` from the Finder toolbar, it:
@@ -70,23 +72,43 @@ The script:
 
 ## Use
 
-If you open `go2cmux.app` normally, it shows a small settings window. From there you can:
+After opening `go2cmux.app`, you can click the button shown below in the settings window to add it to the Finder toolbar.
+(Or you can hold `Command` and drag `go2cmux.app` into the Finder toolbar manually.)
 
-- confirm which `cmux.app` installation was found
-- choose whether the Finder toolbar button opens a `New cmux Window` or a `New cmux Workspace`
-- customize the command that will be sent to `cmux` after the folder is opened
+![Add go2cmux button to Finder Toolbar](doc/6.png)
 
-To use it from Finder:
+When using it from the Finder toolbar:
 
-1. Build the app or download a prebuilt copy
-2. Hold `Command`, then drag `go2cmux.app` into the Finder toolbar
-3. Open any folder in Finder
-4. Click the toolbar button
+1. Click the `go2cmux` icon in the toolbar to open the current Finder folder in `cmux.app`
 
 Expected behavior:
 
 - If `cmux` is already running, `go2cmux` opens the current Finder folder using the selected mode
 - If `cmux` is not running, `go2cmux` launches it first and then opens the folder
+
+## [Prebuilt Version](https://github.com/hyc-dev-spec/go2cmux/releases)
+
+If you use a [Prebuilt Version](https://github.com/hyc-dev-spec/go2cmux/releases), Gatekeeper may block it the first time because the app is not notarized by Apple. In that case:
+
+1. Try opening `go2cmux.app` once, and click **Done** when the warning appears
+
+![Initial Gatekeeper warning](doc/1.png)
+
+2. Open **System Settings**
+
+![Open System Settings](doc/2.png)
+
+3. Go to **Privacy & Security**, then click **Open Anyway**
+
+![Click Open Anyway in Privacy & Security](doc/3.png)
+
+4. In the second confirmation dialog, click **Open Anyway** again
+
+![Confirm Open Anyway](doc/4.png)
+
+5. If macOS asks for it, authenticate with Touch ID or an administrator password
+
+![Authenticate the action](doc/5.png)
 
 ## Project Layout
 
@@ -102,8 +124,6 @@ Expected behavior:
 
 - This is a macOS-only project
 - It depends on `cmux` being installed locally
-- It currently targets one Finder folder at a time
-- The generated `.app` in `build/` is a build artifact and is not tracked in git
 
 ## License
 

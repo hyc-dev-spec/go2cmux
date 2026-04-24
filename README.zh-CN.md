@@ -6,6 +6,8 @@
 
 它的使用方式和 Go2Shell 这类工具类似：把 app 拖到 Finder 工具栏，点击一下，就能从当前 Finder 目录直接跳进终端应用。不同的是，这个项目的目标终端是 `cmux`。
 
+下载预编译版本： [GitHub Releases](https://github.com/hyc-dev-spec/go2cmux/releases)
+
 ## 它能做什么
 
 当你在 Finder 工具栏点击 `go2cmux` 时，它会：
@@ -76,23 +78,43 @@ build/go2cmux.app
 
 ## 使用方式
 
-如果你正常打开 `go2cmux.app`，它会先显示一个很小的设置窗口。你可以在里面：
+当打开了 `go2cmux.app` 之后，可以在设置窗口里点击下面这个按钮，把它加到 Finder 工具栏：
+（或者也可以按住 `Command`，再把 `go2cmux.app` 拖到 Finder 工具栏）
 
-- 确认当前识别到的 `cmux.app` 路径
-- 选择 Finder 工具栏按钮是打开 `New cmux Window` 还是 `New cmux Workspace`
-- 自定义目录打开后发送给 `cmux` 的命令
+![Add go2cmux button to Finder Toolbar](doc/6.png)
 
-从 Finder 使用时：
+从 Finder 工具栏 使用时：
+1. 点击工具栏上的 `go2cmux` 图标，即可进入当前所在目录的 `cmux.app`
 
-1. 先自行构建 app，或者下载预编译版本
-2. 按住 `Command`，再把 `go2cmux.app` 拖到 Finder 工具栏
-3. 在 Finder 中进入任意目录
-4. 点击工具栏按钮
 
 预期行为：
 
 - 如果 `cmux` 已经在运行，`go2cmux` 会按当前选择的模式打开 Finder 当前目录
 - 如果 `cmux` 还没运行，`go2cmux` 会先启动它，再打开当前目录
+
+## [预编译版本](https://github.com/hyc-dev-spec/go2cmux/releases)
+
+如果你使用的是[预编译版本](https://github.com/hyc-dev-spec/go2cmux/releases)，第一次打开时，Gatekeeper 可能会拦截，因为这个 app 还没有经过 Apple notarization。遇到这种情况时，可以按下面的步骤放行：
+
+1. 先尝试打开一次 `go2cmux.app`，看到拦截提示后点击`完成`
+
+![Initial Gatekeeper warning](doc/1.png)
+
+2. 打开“系统设置”
+
+![Open System Settings](doc/2.png)
+
+3. 进入“隐私与安全性”，点击“仍要打开”
+
+![Click Open Anyway in Privacy & Security](doc/3.png)
+
+4. 在第二个确认弹窗中再次选择“仍要打开”
+
+![Confirm Open Anyway](doc/4.png)
+
+5. 如果系统要求，再通过 Touch ID 或输入管理员密码确认
+
+![Authenticate the action](doc/5.png)
 
 ## 项目结构
 
@@ -108,8 +130,6 @@ build/go2cmux.app
 
 - 这是一个仅支持 macOS 的项目
 - 它依赖本地已经安装 `cmux`
-- 当前一次只处理一个 Finder 文件夹
-- `build/` 里的 `.app` 是构建产物，不纳入 git 跟踪
 
 ## 许可证
 

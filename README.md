@@ -92,23 +92,14 @@ If you use a [Prebuilt Version](https://github.com/hyc-dev-spec/go2cmux/releases
 
 1. Try opening `go2cmux.app` once, and click **Done** when the warning appears
 
-![Initial Gatekeeper warning](doc/1.png)
-
 2. Open **System Settings**
-
-![Open System Settings](doc/2.png)
 
 3. Go to **Privacy & Security**, then click **Open Anyway**
 
-![Click Open Anyway in Privacy & Security](doc/3.png)
-
 4. In the second confirmation dialog, click **Open Anyway** again
-
-![Confirm Open Anyway](doc/4.png)
 
 5. If macOS asks for it, authenticate with Touch ID or an administrator password
 
-![Authenticate the action](doc/5.png)
 
 ## Project Layout
 

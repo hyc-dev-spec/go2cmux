@@ -12,7 +12,6 @@ SOURCE_FILES=(
 )
 INFO_PLIST_SOURCE="${REPO_ROOT}/Resources/Info.plist"
 LIGHT_ICON_MASTER="${REPO_ROOT}/Resources/AppIcon-1024.png"
-DARK_ICON_MASTER="${REPO_ROOT}/Resources/AppIcon-1024-dark.png"
 ASSET_CATALOG_SOURCE="${REPO_ROOT}/Assets.xcassets"
 BUILD_DIR="${REPO_ROOT}/build"
 APP_BUNDLE="${BUILD_DIR}/${APP_NAME}"
@@ -36,11 +35,6 @@ fi
 
 if [[ ! -f "${LIGHT_ICON_MASTER}" ]]; then
   echo "Missing light icon source: ${LIGHT_ICON_MASTER}" >&2
-  exit 1
-fi
-
-if [[ ! -f "${DARK_ICON_MASTER}" ]]; then
-  echo "Missing dark icon source: ${DARK_ICON_MASTER}" >&2
   exit 1
 fi
 

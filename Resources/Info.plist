@@ -26,12 +26,14 @@
     <string>1</string>
     <key>LSMinimumSystemVersion</key>
     <string>13.0</string>
-    <key>LSUIElement</key>
-    <true/>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>go2cmux needs to read the current Finder folder and open it in cmux.</string>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
+	<key>LSUIElement</key>
+	<true/>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright © 2026 HYC. All rights reserved.</string>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>go2cmux needs to read the current Finder folder and open it in cmux.</string>
+	<key>NSPrincipalClass</key>
+	<string>NSApplication</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>
